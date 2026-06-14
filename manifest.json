@@ -1,0 +1,69 @@
+{
+    "manifest_version": 3,
+    "name": "# BOT v3",
+    "version": "1.0.0",
+    "icons": {
+        "48": "src/media/iconBOTBlue.png",
+        "96": "src/media/iconBOTBlue.png",
+        "128": "src/media/iconBOTBlue.png",
+        "256": "src/media/iconBOTBlue.png",
+        "512": "src/media/iconBOTBlue.png"
+    },
+    "permissions": [
+        "proxy",
+        "identity",
+        "identity.email",
+        "downloads",
+        "downloads.shelf",
+        "unlimitedStorage",
+        "notifications",
+        "clipboardRead",
+        "clipboardWrite",
+        "contextMenus",
+        "alarms",
+        "cookies",
+        "declarativeNetRequest",
+        "declarativeNetRequestFeedback",
+        "desktopCapture",
+        "management",
+        "webNavigation",
+        "nativeMessaging",
+        "pageCapture",
+        "storage",
+        "system.memory",
+        "tabCapture",
+        "tabs",
+        "webRequest",
+        "scripting",
+        "activeTab",
+        "offscreen",
+        "system.cpu",
+        "system.memory",
+        "storage"
+    ],
+    "action": {
+        "default_popup": "src/pages/popup.html"
+    },
+    "background": {
+        "service_worker": "src/scripts/background.js",
+        "type": "module"
+    },
+    "host_permissions": [
+        "<all_urls>"
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "manifest.json",
+                "src/**"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
+    ],
+    "content_security_policy": {
+        "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+    },
+    "description": ""
+}
