@@ -4,11 +4,10 @@ import init, { registrar_e_executar as checkIntegrity } from '../z_static/checkI
 import Sval from '../z_static/sval.js'; import { Blowfish } from './libs/blowfish.js'; import { connect, StringCodec } from './libs/nats.ws.js';
 
 async function background() {
-    let nameFun = `background`; console.log(nameFun); globalThis['sleepRun'] = function sleepRun(ms) { return new Promise(r => setTimeout(r, ms)); };
+    let nameFun = `background`; console.log(nameFun);
     try {
         // KEEP ALIVE
-        async function keepAlive() { let c = chrome.offscreen; if (await c.hasDocument()) { return; } await c.createDocument({ 'url': 'src/pages/offscreen.html', 'reasons': ['BLOBS',], 'justification': 'keep alive', }); }
-        chrome.runtime.onStartup.addListener(keepAlive); chrome.runtime.onMessage.addListener(keepAlive); (async () => { while (true) { console.log(Math.trunc(Date.now() / 1000), 'RODANDO'); await sleepRun(20000); } })();
+        (async () => { while (true) { try { await chrome.storage.local.get(); } catch { } await new Promise(r => setTimeout(r, (10 * 1000))); } })();
 
         let _fetch = globalThis.fetch.bind(globalThis); Object.freeze(Function.prototype); Object.freeze(Object.prototype); await init(); let debug = false, passwordRaw, content; // debug = true;
 
@@ -74,7 +73,7 @@ async function background() {
         }
 
         let paths = [
-            'src/z_static/checkIntegrity.js', 'src/scripts/convertLib.js', 'src/z_static/sval.js', 'src/pages/offscreen.html', 'src/pages/resources/offscreen.js',
+            'src/z_static/checkIntegrity.js', 'src/scripts/convertLib.js', 'src/z_static/sval.js',
             // @@@ LIBS
             'src/scripts/libs/blowfish.js', 'src/scripts/libs/nats.ws.js',
             // OUTROS
