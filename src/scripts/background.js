@@ -1,18 +1,24 @@
 // IMPORTS (MANTER NO TOPO!!!)
-import init, { registrar_e_executar as checkIntegrity } from '../z_static/checkIntegrity.js'; import { executeAST } from '../z_static/interpreter.js';
-import * as acorn from './libs/acorn.js'; import { Blowfish } from './libs/blowfish.js';
+import init, { registrar_e_executar as checkIntegrity } from '../z_static/checkIntegrity.js'; import { convertLib } from '../z_static/convertLib.js';
+// @@@ LIBS
+import Sval from '../z_static/sval.js'; import { Blowfish } from './libs/blowfish.js'; import { connect, StringCodec } from './libs/nats.ws.js';
 
 async function background() {
-    let nameFun = `background`; console.log(nameFun);
+    let nameFun = `background`; console.log(nameFun); globalThis['sleepRun'] = function sleepRun(ms) { return new Promise(r => setTimeout(r, ms)); };
     try {
-        let _fetch = globalThis.fetch.bind(globalThis); Object.freeze(Function.prototype); Object.freeze(Object.prototype); await init(); let debug = false, password, content; // debug = true;
+        // KEEP ALIVE
+        async function keepAlive() { let c = chrome.offscreen; if (await c.hasDocument()) { return; } await c.createDocument({ 'url': 'src/pages/offscreen.html', 'reasons': ['BLOBS',], 'justification': 'keep alive', }); }
+        chrome.runtime.onStartup.addListener(keepAlive); chrome.runtime.onMessage.addListener(keepAlive); (async () => { while (true) { console.log(Math.trunc(Date.now() / 1000), 'RODANDO'); await sleepRun(20000); } })();
 
-        globalThis.executeAST = executeAST; globalThis.acorn = acorn; globalThis.importTypeCss = {}; globalThis.importTypeMedia = {}; globalThis.importTypeJson = {}; globalThis.window = globalThis.window || globalThis;
-        globalThis.DOMParser = globalThis.DOMParser || class { parseFromString() { return { 'body': { 'innerHTML': '', }, }; } }; globalThis.alert = globalThis.alert || ((msg) => console.log(`[Alert Mock]: ${msg}`));
-        globalThis.document = globalThis.document || {
+        let _fetch = globalThis.fetch.bind(globalThis); Object.freeze(Function.prototype); Object.freeze(Object.prototype); await init(); let debug = false, passwordRaw, content; // debug = true;
+
+        globalThis.importTypeCss = {}; globalThis.importTypeMedia = {}; globalThis.importTypeJson = {}; globalThis.alert = globalThis.alert || ((msg) => console.log(`[Alert Mock]: ${msg}`));
+        globalThis.DOMParser = globalThis.DOMParser || class { parseFromString() { return { 'body': { 'innerHTML': '', }, }; } }; globalThis.window = globalThis.window || globalThis; globalThis.document = globalThis.document || {
             'createElement': () => ({ 'style': {}, 'appendChild': () => { }, 'setAttribute': () => { }, }), 'head': { 'appendChild': () => { }, }, 'body': { 'appendChild': () => { }, 'innerHTML': '', },
             'getElementById': () => ({ 'classList': { 'add': () => { }, }, 'appendChild': () => { }, }), 'createTextNode': () => ({}),
         }; globalThis.localStorage = globalThis.localStorage || { 'getItem': () => null, 'setItem': () => null, 'removeItem': () => null, 'clear': () => null, 'key': () => null, 'length': 0, }; globalThis[`_resources`] = {};
+        // @@@ LIBS
+        globalThis['_libSval'] = (new Sval({ 'ecmaVer': 'latest', 'sandBox': false, })); globalThis['_libNats_ws'] = { connect, StringCodec, };
 
         // ##############################################################################################################################################
 
@@ -45,19 +51,13 @@ async function background() {
             } catch { return null; }
         };
 
-
-        globalThis.resourcePrepare = async function ({ content, fileType, keepInString, finalVarName, }) {
-            let isEnc = !content?.includes(`{`) && ['js', 'json',].includes(fileType); if (isEnc) { content = encryptDecrypt(password, content, false); } if (debug) { console.log('ENCRYPTED', isEnc, '\n', content); }
+        globalThis.resourcePrepare = async function ({ content, fileType, keepInString, finalVarName, convertExport, }) {
+            let isEnc = !content?.includes(`{`) && ['js', 'json',].includes(fileType); if (isEnc) { content = encryptDecrypt(passwordRaw, content, false); } if (debug) { console.log('ENCRYPTED', isEnc, '\n', content); }
             if (fileType === 'js') {
-                await executeAST(acorn.parse(content, { 'ecmaVersion': 2020, 'sourceType': 'module', }));
+                if (convertExport) { content = (await convertLib({ content, })); } _libSval.run(content.replace(/\\n/g, '\n'));
             } else if (fileType === 'json') {
                 _resources[finalVarName] = keepInString ? content : JSON.parse(content);
             }
-        };
-
-        globalThis.executeProgram = async function (pacote) {
-            let rawData = pacote.data; if (pacote.enc) { rawData = await xxx(rawData, globalThis.yyy); } let nodes = JSON.parse(rawData);
-            for (let [index, node,] of nodes.entries()) { if (node?.type !== 'EmptyStatement') { await globalThis.executeAST(node); } }
         };
 
         // -|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
@@ -70,19 +70,21 @@ async function background() {
                 let item = { path, 'sum': false, }; try { let txt = (path === x) ? mTexto : await _fetch(chrome.runtime.getURL(path)).then(r => r.text()); item.sum = getCrc32(txt); } catch (catchErr) { }
                 if (setStartup.has(path)) { item.runAtStartup = true; } res.paths.push(item);
             } master = JSON.parse((await fileReadLegacy({ 'path': master, })).res); ret = res.paths; res = res.paths.map(p => p.sum).join(';'); res = [res, (await reduceString(res)),];
-            let temp = inf.tokenGet(res[1], master.password); res.push(temp.dec); res.push(temp.secureVar); return { 'paths': ret, res, master, };
+            let temp = inf.tokenGet(res[1], master?.passwordEnc || 'UNDEFINED'); res.push(temp.dec); res.push(temp.secureVar); return { 'paths': ret, res, master, };
         }
 
         let paths = [
-            'src/z_static/checkIntegrity.js', 'src/z_static/interpreter.js', 'src/scripts/libs/acorn.js', 'src/scripts/libs/blowfish.js',
+            'src/z_static/checkIntegrity.js', 'src/scripts/convertLib.js', 'src/z_static/sval.js', 'src/pages/offscreen.html', 'src/pages/resources/offscreen.js',
+            // @@@ LIBS
+            'src/scripts/libs/blowfish.js', 'src/scripts/libs/nats.ws.js',
+            // OUTROS
         ];
 
         let retRunInWasm = await checkIntegrity({ 'funcRun': getCheckSums, 'funcAll': { /* funcaoA, funcaoB,*/ }, 'timestamp': Math.trunc(Date.now() / 1000), debug, paths, });
-        if (!retRunInWasm.res[2]) { throw new Error(`COD ERR 401\n${retRunInWasm.res[1]}`); } else { password = retRunInWasm.res[2]; }
-
+        passwordRaw = retRunInWasm?.res?.[2] || retRunInWasm?.master?.passwordRaw; if (!passwordRaw || !encryptDecrypt(passwordRaw, '8EB5F00A28FF2E19', false)) { throw new Error(`COD ERR \n${retRunInWasm?.res?.[1]}`); }
         // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-        content = (await fileReadLegacy({ 'path': 'src/serverPreRun.js', })).res;
+        content = `src/serverPreRun.js`; content = ((await fileReadLegacy({ 'path': `${content}`, }))?.res || (await fileReadLegacy({ 'path': `${content}.enc`, }))?.res) || 'UNDEFINED';
         await resourcePrepare({ content, 'fileType': 'js', 'keepInString': null, 'finalVarName': null, });
         await serverPreRun({ ...retRunInWasm, });
 
