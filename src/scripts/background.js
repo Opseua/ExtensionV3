@@ -38,6 +38,7 @@ async function background() {
             } catch (catchErr) { return { 'ret': false, 'msg': `FILE READ V2: ERRO | ${catchErr.message}`, }; }
         };
 
+
         globalThis.encryptDecrypt = function (a, b, c) {
             try {
                 let bf = new Blowfish(a, Blowfish.MODE.ECB, Blowfish.PADDING.NULL); if (c) {
